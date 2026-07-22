@@ -7,6 +7,8 @@ pipeline {
 
         BACKEND_REPO = "fastapi-backend"
         FRONTEND_REPO = "react-frontend"
+
+        DEV_SERVER = "13.203.57.158"
     }
 
     stages {
@@ -64,7 +66,17 @@ pipeline {
         stage('Deploy to Development') {
             steps {
                 sh '''
-                ssh -o StrictHostKeyChecking=no ubuntu@13.203.57.158 "bash ~/deploy.sh"
+                ssh -o StrictHostKeyChecking=no ubuntu@$DEV_SERVER "bash ~/deploy.sh"
+                '''
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                sh '''
+                ssh -o StrictHostKeyChecking=no ubuntu@$DEV_SERVER "
+                curl -f http://localhost:8000/health
+                "
                 '''
             }
         }
@@ -72,12 +84,26 @@ pipeline {
     }
 
     post {
+
         success {
-            echo 'Docker Images Built, Pushed to Amazon ECR, and Deployed Successfully'
+            echo '======================================='
+            echo 'Build Successful'
+            echo 'Images Built'
+            echo 'Images Pushed to Amazon ECR'
+            echo 'Application Deployed Successfully'
+            echo 'Health Check Passed'
+            echo '======================================='
         }
 
         failure {
+            echo '======================================='
             echo 'Pipeline Failed'
+            echo 'Check Jenkins Console Output'
+            echo '======================================='
+        }
+
+        always {
+            cleanWs()
         }
     }
 }
