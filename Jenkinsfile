@@ -61,11 +61,19 @@ pipeline {
             }
         }
 
+        stage('Deploy to Development') {
+            steps {
+                sh '''
+                ssh -o StrictHostKeyChecking=no ubuntu@13.203.57.158 "bash ~/deploy.sh"
+                '''
+            }
+        }
+
     }
 
     post {
         success {
-            echo 'Docker Images Pushed to Amazon ECR Successfully'
+            echo 'Docker Images Built, Pushed to Amazon ECR, and Deployed Successfully'
         }
 
         failure {
