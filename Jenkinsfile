@@ -5,20 +5,19 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo 'Checking out source code...'
                 checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Build Backend Docker Image') {
             steps {
-                echo 'Build Stage Completed'
+                sh 'docker build -t fastapi-backend ./backend'
             }
         }
 
-        stage('Test') {
+        stage('Build Frontend Docker Image') {
             steps {
-                echo 'Test Stage Completed'
+                sh 'docker build -t react-frontend ./frontend'
             }
         }
 
@@ -26,7 +25,7 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline Completed Successfully'
+            echo 'Docker Images Built Successfully'
         }
 
         failure {
