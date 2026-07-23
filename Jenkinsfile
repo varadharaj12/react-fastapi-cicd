@@ -10,6 +10,8 @@ pipeline {
 
         DEV_SERVER = "13.203.57.158"
         PROD_SERVER = "65.2.212.126"
+
+        EMAIL_TO = "varadharajmech30@gmail.com"
     }
 
     stages {
@@ -99,12 +101,29 @@ pipeline {
 
         stage('Production Health Check') {
             steps {
-                sh '''
-                ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER \
-                "curl -f http://localhost:8000/health"
-                '''
+                script {
+                    try {
+
+                        sh '''
+                        ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER \
+                        "curl -f http://localhost:8000/health"
+                        '''
+
+                    } catch(Exception e) {
+
+                        echo "Production Health Check Failed"
+
+                        sh '''
+                        ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER \
+                        "bash ~/rollback.sh"
+                        '''
+
+                        error("Rollback Executed - Deployment Failed")
+                    }
+                }
             }
         }
+
     }
 
     post {
@@ -124,20 +143,22 @@ pipeline {
                 body: """
 Hello,
 
-Your Jenkins pipeline completed successfully.
+Your Jenkins CI/CD pipeline completed successfully.
 
 Job Name: ${env.JOB_NAME}
 Build Number: ${env.BUILD_NUMBER}
-Build URL: ${env.BUILD_URL}
 
-Development Deployment: SUCCESS
-Production Deployment: SUCCESS
-Health Checks: PASSED
+Build URL:
+${env.BUILD_URL}
+
+Development Deployment : SUCCESS
+Production Deployment  : SUCCESS
+Health Checks          : PASSED
 
 Regards,
 Jenkins CI/CD
 """,
-                to: "varadharajmech30@gmail.com"
+                to: EMAIL_TO
             )
         }
 
@@ -145,6 +166,7 @@ Jenkins CI/CD
 
             echo "========================================="
             echo "Pipeline Failed"
+            echo "Rollback Executed (if required)"
             echo "========================================="
 
             emailext(
@@ -152,18 +174,23 @@ Jenkins CI/CD
                 body: """
 Hello,
 
-Your Jenkins pipeline has FAILED.
+Your Jenkins CI/CD pipeline FAILED.
 
 Job Name: ${env.JOB_NAME}
 Build Number: ${env.BUILD_NUMBER}
-Build URL: ${env.BUILD_URL}
 
-Please review the Jenkins console output for details.
+Build URL:
+${env.BUILD_URL}
+
+Production deployment failed.
+Rollback was executed if the health check failed.
+
+Please check the Jenkins console output.
 
 Regards,
 Jenkins CI/CD
 """,
-                to: "varadharajmech30@gmail.com"
+                to: EMAIL_TO
             )
         }
 
