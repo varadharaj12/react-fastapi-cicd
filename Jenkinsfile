@@ -9,6 +9,7 @@ pipeline {
         FRONTEND_REPO = "react-frontend"
 
         DEV_SERVER = "13.203.57.158"
+        PROD_SERVER = "65.2.212.126"
     }
 
     stages {
@@ -71,12 +72,37 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
+        stage('Development Health Check') {
             steps {
                 sh '''
-                ssh -o StrictHostKeyChecking=no ubuntu@$DEV_SERVER "
-                curl -f http://localhost:8000/health
-                "
+                ssh -o StrictHostKeyChecking=no ubuntu@$DEV_SERVER \
+                "curl -f http://localhost:8000/health"
+                '''
+            }
+        }
+
+        stage('Manual Approval') {
+            steps {
+                input(
+                    message: 'Deploy to Production?',
+                    ok: 'Deploy'
+                )
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                sh '''
+                ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER "bash ~/deploy.sh"
+                '''
+            }
+        }
+
+        stage('Production Health Check') {
+            steps {
+                sh '''
+                ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER \
+                "curl -f http://localhost:8000/health"
                 '''
             }
         }
@@ -86,20 +112,22 @@ pipeline {
     post {
 
         success {
-            echo '======================================='
-            echo 'Build Successful'
-            echo 'Images Built'
-            echo 'Images Pushed to Amazon ECR'
-            echo 'Application Deployed Successfully'
-            echo 'Health Check Passed'
-            echo '======================================='
+            echo '==========================================='
+            echo 'CI/CD Pipeline Completed Successfully'
+            echo '✔ Images Built'
+            echo '✔ Images Pushed to Amazon ECR'
+            echo '✔ Development Deployment Successful'
+            echo '✔ Development Health Check Passed'
+            echo '✔ Production Deployment Successful'
+            echo '✔ Production Health Check Passed'
+            echo '==========================================='
         }
 
         failure {
-            echo '======================================='
+            echo '==========================================='
             echo 'Pipeline Failed'
-            echo 'Check Jenkins Console Output'
-            echo '======================================='
+            echo 'Please check Jenkins Console Output'
+            echo '==========================================='
         }
 
         always {
