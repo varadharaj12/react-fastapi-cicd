@@ -58,7 +58,6 @@ pipeline {
             steps {
                 sh '''
                 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BACKEND_REPO:latest
-
                 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$FRONTEND_REPO:latest
                 '''
             }
@@ -106,28 +105,66 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
 
         success {
-            echo '==========================================='
-            echo 'CI/CD Pipeline Completed Successfully'
-            echo '✔ Images Built'
-            echo '✔ Images Pushed to Amazon ECR'
-            echo '✔ Development Deployment Successful'
-            echo '✔ Development Health Check Passed'
-            echo '✔ Production Deployment Successful'
-            echo '✔ Production Health Check Passed'
-            echo '==========================================='
+
+            echo "========================================="
+            echo "CI/CD Pipeline Completed Successfully"
+            echo "Development Deployment Successful"
+            echo "Development Health Check Passed"
+            echo "Production Deployment Successful"
+            echo "Production Health Check Passed"
+            echo "========================================="
+
+            emailext(
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Hello,
+
+Your Jenkins pipeline completed successfully.
+
+Job Name: ${env.JOB_NAME}
+Build Number: ${env.BUILD_NUMBER}
+Build URL: ${env.BUILD_URL}
+
+Development Deployment: SUCCESS
+Production Deployment: SUCCESS
+Health Checks: PASSED
+
+Regards,
+Jenkins CI/CD
+""",
+                to: "varadharajmech30@gmail.com"
+            )
         }
 
         failure {
-            echo '==========================================='
-            echo 'Pipeline Failed'
-            echo 'Please check Jenkins Console Output'
-            echo '==========================================='
+
+            echo "========================================="
+            echo "Pipeline Failed"
+            echo "========================================="
+
+            emailext(
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Hello,
+
+Your Jenkins pipeline has FAILED.
+
+Job Name: ${env.JOB_NAME}
+Build Number: ${env.BUILD_NUMBER}
+Build URL: ${env.BUILD_URL}
+
+Please review the Jenkins console output for details.
+
+Regards,
+Jenkins CI/CD
+""",
+                to: "varadharajmech30@gmail.com"
+            )
         }
 
         always {
